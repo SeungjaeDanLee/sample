@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeleaf.org"
+                xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+                layout:decorate="~{layouts/layout2}">
+
+<th:block layout:fragment="script">
+    <script th:inline="javascript">
+        $(document).ready(function(){
+            var searchForm = $("#searchForm");
+            $(".page-link").on("click", function(e){
+                // 페이징 이동 이벤트 막기
+                e.preventDefault();
+                var link = $(this).attr("href");
+                var searchType = $("[name=searchType]").val();
+                var keyword = $("[name=keyword]").val();
+                // 페이징 이동 링크 다시 생성(검색타입 + 검색어 포함)
+                var redirectLink = link + "&searchType=" + searchType + "&keyword=" + keyword;
+
+                // 페이지 이동
+                location.href = redirectLink;
+            });
+
+            // 검색 버튼 클릭 시 validation check
+            $("#btnSearch").on("click", function(e){
+                var searchSelectTag = $("[name=searchType]");
+                var keywordTag = $("[name=keyword]");
+
+                // 검색 항목을 선택하지 않았을 때
+                if(searchSelectTag.val().length < 1) {
+                    // 페이징 이동 이벤트 막기
+                    e.preventDefault();
+
+                    alert("검색할 항목을 선택해주세요.");
+                    searchSelectTag.select();
+                    keywordTag.val("");
+                    return false;
+                }
+
+                // 검색어를 입력하지 않았을 때
+                if(keywordTag.val().length < 1) {
+                    // 페이징 이동 이벤트 막기
+                    e.preventDefault();
+
+                    alert("검색어를 입력해주세요.");
+                    keywordTag.focus();
+                    return false;
+                }
+            });
+        });
+    </script>
+</th:block>
+
+<th:block layout:fragment="content">
+    <div class="container p-3">
+        <table class="table table-bordered table-striped">
+            <tr>
+                <td>#</td>
+                <td>제목</td>
+                <td>작성자</td>
+                <td>등록일</td>
+            </tr>
+            <th:block th:if="${list.totalElements > 0}">
+            <tr th:each="board : ${list}">
+                <td th:text="${board.bno}"></td>
+                <td>
+                    <a th:href="@{view(bno=${board.bno})}" th:text="${board.title} + ' [' + ${board.replyList.size()} + ']'"></a>
+                </td>
+                <td th:text="${board.writer}"></td>
+                <td th:text="${#temporals.format(board.regDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
+            </tr>
+            </th:block>
+            <th:block th:unless="${list.totalElements > 0}">
+                <tr class="text-center">
+                    <td colspan="4">내용이 없습니다.</td>
+                </tr>
+            </th:block>
+        </table>
+        <div>
+            <button type="button" class="btn btn-outline-dark"
+                onclick="location.href='/board/register'">글쓰기</button>
+        </div>
+        <nav aria-label="Page navigation example">
+            <th:block th:if="${list.totalElements > 0}">
+            <ul class="pagination justify-content-center"
+                th:with="start=${(list.number/list.totalPages)*list.totalPages + 1},
+                    end=${(list.totalPages == 0) ? 1 :
+                    (start + (list.totalPages - 1) < list.totalPages ? start + (list.totalPages - 1) : list.totalPages)}">
+
+                <li th:class="${list.first} ? 'page-item disabled' : 'page-item'">
+                    <a class="page-link" th:href="@{/board/list(page=0)}">First</a>
+                </li>
+                <li th:class="${list.first} ? 'page-item disabled' : 'page-item'">
+                    <a class="page-link" th:href="${list.first} ? '#' : @{/board/list(page=${list.number} - 1)}">Previous</a>
+                </li>
+                <li th:each="page: ${#numbers.sequence(start, end)}" th:class="${page == list.number + 1} ? 'page-item active' : 'page-item' ">
+                    <a class="page-link" th:href="@{/board/list(page=${page - 1})}">[[${page}]]</a>
+                </li>
+                <li th:class="${list.last} ? 'page-item disabled' : 'page-item'">
+                    <a class="page-link" th:href="${list.last} ? '#' : @{/board/list(page=${list.number} + 1)}">Next</a>
+                </li>
+                <li th:class="${list.last} ? 'page-item disabled' : 'page-item'">
+                    <a class="page-link" th:href="@{/board/list(page=${list.totalPages - 1})}">Last</a>
+                </li>
+            </ul>
+            </th:block>
+            <th:block th:unless="${list.totalElements > 0}">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item active">
+                        <a class="page-link" href="#">1</a>
+                    </li>
+                </ul>
+            </th:block>
+        </nav>
+    </div>
+    <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid justify-content-center">
+            <form action="/board/list" id="searchForm" class="d-flex" role="search">
+                <select name="searchType" class="form-select" aria-label="Default select example">
+                    <option value="" th:selected="${searchType} == ''">--</option>
+                    <option value="title" th:selected="${searchType} == 'title'">제목</option>
+                    <option value="content" th:selected="${searchType} == 'content'">내용</option>
+                </select>
+                <input class="form-control me-2" type="search" name="keyword" placeholder="Search" aria-label="Search" th:value="${keyword}">
+                <button class="btn btn-outline-success" id="btnSearch" type="submit">Search</button>
+            </form>
+        </div>
+    </nav>
+</th:block>
+</html>

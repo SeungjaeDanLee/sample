@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Title</title>
+</head>
+<body>
+    <input name="uploadFiles" type="file" multiple>
+    <button class="uploadBtn">Upload</button>
+
+    <div class="uploadResult">
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function(){
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+            function showUploadImages(arr) {
+                console.log(arr);
+
+                var divArea = $(".uploadResult");
+
+                var str = "";
+
+                for(var i = 0; i < arr.length ; i++) {
+                    //divArea.append("<img src='/display?fileName=" + arr[i].imageURL + "'>");
+                    // divArea.append("<img src='/display?fileName=" + arr[i].thumbnailURL + "'>");
+                    str += "<div>";
+                    str += "    <img src='/display?fileName=" + arr[i].thumbnailURL + "'>";
+                    str += "    <button class='removeBtn' data-name='" + arr[i].imageURL +
+                                    "'>REMOVE</button>";
+                    str += "</div>";
+                }
+                divArea.append(str);
+            }
+
+            $(".uploadBtn").on("click", function(){
+                var formData = new FormData();
+                var inputFile = $("input[type=file]");
+                var files = inputFile[0].files;
+
+                for(var i = 0; i < files.length; i++) {
+                    console.log(files[i]);
+                    formData.append("uploadFiles", files[i]);
+                }
+
+                // 실제 업로드 부분
+                $.ajax({
+                    url: "/uploadAjax",
+                    processData: false,
+                    contentType: false,      // multipart/form-data 타입을 사용하기 위해서
+                                             // 반드시 contentType: false로 지정해야됨
+                    beforeSend : function(xhr)
+                    {   /*데이터를 전송하기 전에 헤더에 csrf값을 설정한다*/
+                        xhr.setRequestHeader(header, token);
+                    },
+                    data: formData,
+                    type: "POST",
+                    dataType: "json",
+                    success: function(result) {
+                        console.log("result");
+
+                        showUploadImages(result);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        console.log(textStatus);
+                    }
+                });
+            });
+
+            $(".uploadResult").on("click", ".removeBtn", function(e){
+                var target = $(this);
+                var fileName = target.data("name");
+                // .closest() - 가장 가까운 부모를 선택
+                var targetDiv = $(this).closest("div");
+
+                console.log(fileName);
+
+                // $.post("/removeFile", {fileName: fileName}, function(result){
+                //    console.log(result);
+                //     if (result === true) {
+                //         targetDiv.remove();
+                //     }
+                // });
+
+
+                $.ajax({
+                    url: '/removeFile',
+                    type: "POST",
+                    data: {fileName: fileName},
+                    dataType: "text",
+                    beforeSend : function(xhr)
+                    {   /*데이터를 전송하기 전에 헤더에 csrf값을 설정한다*/
+                        xhr.setRequestHeader(header, token);
+                    },
+                    success: function(result){
+                        console.log(result);
+                        console.log(typeof result);
+                        if (result === "true") {
+                            console.log("result true==== : " + result);
+                            targetDiv.remove();
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        console.log(textStatus);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+

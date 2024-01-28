@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 리스트</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container p-3">
+        <table class="table table-bordered table-striped">
+            <tr>
+                <td>#</td>
+                <td>제목</td>
+                <td>작성자</td>
+                <td>등록일</td>
+            </tr>
+            <tr th:each="board : ${list}">
+                <td th:text="${board.bno}"></td>
+                <td>
+                    <a th:href="@{view(bno=${board.bno})}" th:text="${board.title}"></a>
+                </td>
+                <td th:text="${board.writer}"></td>
+                <td th:text="${#temporals.format(board.regDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

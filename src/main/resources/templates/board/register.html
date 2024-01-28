@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout2}">
+
+<th:block layout:fragment="content">
+
+    <th:block layout:fragment="script">
+        <script th:inline="javascript">
+            $(document).ready(function(){
+                var token = $("meta[name='_csrf']").attr("content");
+                var header = $("meta[name='_csrf_header']").attr("content");
+                function showUploadImages(arr) {
+                    console.log(arr);
+
+                    var divArea = $(".uploadResult");
+
+                    var str = "";
+
+                    for(var i = 0; i < arr.length ; i++) {
+                        //divArea.append("<img src='/display?fileName=" + arr[i].imageURL + "'>");
+                        // divArea.append("<img src='/display?fileName=" + arr[i].thumbnailURL + "'>");
+                        str += "<div>";
+                        str += "    <img src='/display?fileName=" + arr[i].thumbnailURL + "'>";
+                        str += "    <button type='button' class='removeBtn' data-name='" + arr[i].imageURL +
+                            "'>REMOVE</button>";
+                        str += "</div>";
+                        str += "<input type='hidden' name='fileNames' " +
+                                                    " value='" + arr[i].imageURL + "'>";
+                        str += "<input type='hidden' name='thumbnailNames' " +
+                                                    "value='" + arr[i].thumbnailURL + "'>";
+                    }
+                    divArea.append(str);
+                }
+
+                $(".uploadBtn").on("click", function(){
+                    var formData = new FormData();
+                    var inputFile = $("input[type=file]");
+                    var files = inputFile[0].files;
+
+                    if(files.length < 1) {
+                        alert("선택된 파일이 없습니다.");
+                        return;
+                    }
+
+                    for(var i = 0; i < files.length; i++) {
+                        console.log(files[i]);
+                        formData.append("uploadFiles", files[i]);
+                    }
+
+                    // 실제 업로드 부분
+                    $.ajax({
+                        url: "/uploadAjax",
+                        processData: false,
+                        contentType: false,      // multipart/form-data 타입을 사용하기 위해서
+                                                 // 반드시 contentType: false로 지정해야됨
+                        beforeSend : function(xhr)
+                        {   /*데이터를 전송하기 전에 헤더에 csrf값을 설정한다*/
+                            xhr.setRequestHeader(header, token);
+                        },
+                        data: formData,
+                        type: "POST",
+                        dataType: "json",
+                        success: function(result) {
+                            console.log("result");
+
+                            showUploadImages(result);
+                        },
+                        error: function(jqXHR, textStatus, errorThrown){
+                            console.log(textStatus);
+                        }
+                    });
+                });
+
+                $(".uploadResult").on("click", ".removeBtn", function(e){
+                    var target = $(this);
+                    var fileName = target.data("name");
+                    // .closest() - 가장 가까운 부모를 선택
+                    var targetDiv = $(this).closest("div");
+
+                    console.log(fileName);
+
+                   $.ajax({
+                        url: '/removeFile',
+                        type: "POST",
+                        data: {fileName: fileName},
+                        dataType: "text",
+                        beforeSend : function(xhr)
+                        {   /*데이터를 전송하기 전에 헤더에 csrf값을 설정한다*/
+                            xhr.setRequestHeader(header, token);
+                        },
+                        success: function(result){
+                            console.log(result);
+                            console.log(typeof result);
+                            if (result === "true") {
+                                console.log("result true==== : " + result);
+                                targetDiv.remove();
+                            }
+                        },
+                        error: function(jqXHR, textStatus, errorThrown){
+                            console.log(textStatus);
+                        }
+                    });
+                });
+            });
+        </script>
+    </th:block>
+
+    <div class="container p-3">
+        <h3>게시글 등록</h3>
+        <form action="/board/register" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div class="input-group mb-3">
+                <span class="input-group-text" id="basic-addon1">제목</span>
+                <input type="text" name="title" class="form-control" placeholder="제목" aria-label="title" aria-describedby="basic-addon1">
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text" id="basic-addon2">내용</span>
+                <input type="text" name="content" class="form-control" placeholder="내용" aria-label="content" aria-describedby="basic-addon2">
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text" id="basic-addon3">작성자</span>
+                <input type="text" name="writer" class="form-control" placeholder="작성자" aria-label="writer" aria-describedby="basic-addon3">
+            </div>
+
+            <div class="input-group mb-3">
+                <input name="uploadFiles" type="file" multiple>
+                <button type="button" class="uploadBtn">Upload</button>
+
+                <div class="uploadResult">
+
+                </div>
+            </div>
+
+            <div class="input-group mb-3">
+                <button type="submit" class="btn btn-secondary">등록</button>
+                <button type="reset" class="btn btn-light">취소</button>
+            </div>
+        </form>
+    </div>
+</th:block>
+</html>
